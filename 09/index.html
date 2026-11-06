@@ -1,0 +1,94 @@
+cd "../_se"
+mkdir -Force "09/public" | Out-Null
+
+@'
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FocusBoard — 雲端任務與番茄鐘</title>
+  <style>
+    :root { --bg: #0f172a; --card: #1e293b; --accent: #38bdf8; --text: #f8fafc; --muted: #94a3b8; }
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; padding: 24px; }
+    .container { width: 100%; max-width: 480px; background: var(--card); border-radius: 16px; padding: 28px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+    h1 { margin: 0 0 6px; font-size: 1.5rem; color: var(--accent); }
+    p.sub { margin: 0 0 20px; color: var(--muted); font-size: 0.9rem; }
+    .timer-box { text-align: center; background: #0b1120; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+    .time { font-size: 3rem; font-weight: 700; letter-spacing: 2px; margin-bottom: 12px; }
+    button { background: var(--accent); color: #0f172a; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; margin: 0 4px; }
+    button.secondary { background: #334155; color: var(--text); }
+    .input-row { display: flex; gap: 8px; margin-bottom: 16px; }
+    input { flex: 1; padding: 10px 12px; border-radius: 8px; border: 1px solid #334155; background: #0b1120; color: var(--text); }
+    ul { list-style: none; padding: 0; margin: 0; }
+    li { display: flex; justify-content: space-between; align-items: center; background: #0b1120; padding: 10px 14px; border-radius: 8px; margin-bottom: 8px; }
+    li.done span { text-decoration: line-through; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>FocusBoard</h1>
+    <p class="sub">Deployed on Cloudflare Pages — 專注計時與待辦清單</p>
+    <div class="timer-box">
+      <div class="time" id="timer">25:00</div>
+      <button onclick="toggleTimer()" id="startBtn">開始專注</button>
+      <button class="secondary" onclick="resetTimer()">重置</button>
+    </div>
+    <div class="input-row">
+      <input id="taskInput" placeholder="新增今日待辦事項..." onkeydown="if(event.key==='Enter') addTask()" />
+      <button onclick="addTask()">新增</button>
+    </div>
+    <ul id="taskList"></ul>
+  </div>
+  <script>
+    let seconds = 1500, interval = null;
+    const timerEl = document.getElementById('timer'), startBtn = document.getElementById('startBtn');
+    function renderTime() {
+      const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+      const s = String(seconds % 60).padStart(2, '0');
+      timerEl.textContent = `${m}:${s}`;
+    }
+    function toggleTimer() {
+      if (interval) { clearInterval(interval); interval = null; startBtn.textContent = '繼續專注'; }
+      else {
+        startBtn.textContent = '暫停';
+        interval = setInterval(() => { if (seconds > 0) { seconds--; renderTime(); } else { clearInterval(interval); alert('時間到！'); } }, 1000);
+      }
+    }
+    function resetTimer() { clearInterval(interval); interval = null; seconds = 1500; renderTime(); startBtn.textContent = '開始專注'; }
+
+    let tasks = JSON.parse(localStorage.getItem('cf_tasks') || '[]');
+    function saveAndRender() {
+      localStorage.setItem('cf_tasks', JSON.stringify(tasks));
+      const ul = document.getElementById('taskList');
+      ul.innerHTML = '';
+      tasks.forEach((t, i) => {
+        const li = document.createElement('li');
+        if (t.done) li.classList.add('done');
+        li.innerHTML = `<span onclick="toggleTask(${i})" style="cursor:pointer;flex:1">${t.text}</span><button class="secondary" onclick="delTask(${i})">刪除</button>`;
+        ul.appendChild(li);
+      });
+    }
+    function addTask() {
+      const inp = document.getElementById('taskInput');
+      if (!inp.value.trim()) return;
+      tasks.push({ text: inp.value.trim(), done: false });
+      inp.value = '';
+      saveAndRender();
+    }
+    function toggleTask(i) { tasks[i].done = !tasks[i].done; saveAndRender(); }
+    function delTask(i) { tasks.splice(i, 1); saveAndRender(); }
+    saveAndRender();
+  </script>
+</body>
+</html>
+'@ | Set-Content -Encoding UTF8 "09/public/index.html"
+
+@'
+# Week 9: Cloudflare Pages Web Application (FocusBoard)
+
+* **專案名稱**: FocusBoard 雲端任務與番茄鐘
+* **功能**: 提供 25 分鐘番茄鐘倒數計時與支援 LocalStorage 儲存的待辦事項管理。
+* **部署平台**: Cloudflare Pages (`wrangler pages deploy`)
+'@ | Set-Content -Encoding UTF8 "09/README.md"

@@ -1,0 +1,1 @@
+﻿export function formatPomodoro(sec = 1500) { const s = Math.max(0, Math.floor(sec)); return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); } export function calcCompletionRate(tasks = []) { if (!tasks.length) return 0; return Math.round((tasks.filter(t => t.done).length / tasks.length) * 100); }
